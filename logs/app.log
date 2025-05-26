@@ -1,0 +1,40 @@
+{"level":"info","msg":"Starting webservice...","time":"2025-05-25 21:08:55"}
+{"level":"info","msg":"Tracer initialized successfully","time":"2025-05-25 21:08:55"}
+{"level":"fatal","msg":"Failed to initialize database: failed to connect to database: dial tcp 127.0.0.1:3306: connect: connection refused","time":"2025-05-25 21:08:55"}
+{"level":"info","msg":"Starting webservice...","time":"2025-05-25 23:34:28"}
+{"level":"info","msg":"Tracer initialized successfully","time":"2025-05-25 23:34:28"}
+{"level":"info","msg":"Database connected successfully","time":"2025-05-25 23:34:29"}
+{"level":"info","msg":"Starting database migration...","time":"2025-05-25 23:34:29"}
+{"level":"info","msg":"Successfully migrated model: *models.User","time":"2025-05-25 23:34:29"}
+{"level":"info","msg":"Database migration completed successfully","time":"2025-05-25 23:34:29"}
+{"level":"info","msg":"Creating database indexes...","time":"2025-05-25 23:34:29"}
+{"level":"error","msg":"Failed to create index idx_users_username on table users: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS idx_users_username ON users(username)' at line 1","time":"2025-05-25 23:34:29"}
+{"level":"fatal","msg":"Failed to run database migrations: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS idx_users_username ON users(username)' at line 1","time":"2025-05-25 23:34:29"}
+{"level":"info","msg":"Starting webservice...","time":"2025-05-25 23:35:34"}
+{"level":"info","msg":"Tracer initialized successfully","time":"2025-05-25 23:35:34"}
+{"level":"info","msg":"Database connected successfully","time":"2025-05-25 23:35:34"}
+{"level":"info","msg":"Starting database migration...","time":"2025-05-25 23:35:34"}
+{"level":"info","msg":"Successfully migrated model: *models.User","time":"2025-05-25 23:35:35"}
+{"level":"info","msg":"Database migration completed successfully","time":"2025-05-25 23:35:35"}
+{"level":"info","msg":"Creating database indexes...","time":"2025-05-25 23:35:35"}
+{"level":"error","msg":"Failed to create index idx_users_username on table users: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS idx_users_username ON users(username)' at line 1","time":"2025-05-25 23:35:35"}
+{"level":"fatal","msg":"Failed to run database migrations: Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS idx_users_username ON users(username)' at line 1","time":"2025-05-25 23:35:35"}
+{"level":"info","msg":"Starting webservice...","time":"2025-05-26 08:06:10"}
+{"level":"info","msg":"Tracer initialized successfully","time":"2025-05-26 08:06:10"}
+{"level":"info","msg":"Database connected successfully","time":"2025-05-26 08:06:10"}
+{"level":"info","msg":"Starting database migration...","time":"2025-05-26 08:06:10"}
+{"level":"info","msg":"Successfully migrated model: *models.User","time":"2025-05-26 08:06:14"}
+{"level":"info","msg":"Database migration completed successfully","time":"2025-05-26 08:06:14"}
+{"level":"info","msg":"Creating database indexes...","time":"2025-05-26 08:06:14"}
+{"level":"info","msg":"Index idx_users_username on table users already exists","time":"2025-05-26 08:06:14"}
+{"level":"info","msg":"Index idx_users_email on table users already exists","time":"2025-05-26 08:06:14"}
+{"level":"info","msg":"Successfully created index: idx_users_role on table users","time":"2025-05-26 08:06:15"}
+{"level":"info","msg":"Successfully created index: idx_users_status on table users","time":"2025-05-26 08:06:16"}
+{"level":"info","msg":"Successfully created index: idx_users_created_at on table users","time":"2025-05-26 08:06:16"}
+{"level":"info","msg":"Database indexes created successfully","time":"2025-05-26 08:06:16"}
+{"level":"info","msg":"Seeding initial data...","time":"2025-05-26 08:06:16"}
+{"level":"info","msg":"Default admin user created successfully (username: admin, password: password)","time":"2025-05-26 08:06:17"}
+{"level":"info","msg":"Test user created successfully (username: testuser, password: password)","time":"2025-05-26 08:06:17"}
+{"level":"info","msg":"Data seeding completed successfully","time":"2025-05-26 08:06:17"}
+{"level":"info","msg":"Database migrations completed successfully","time":"2025-05-26 08:06:17"}
+{"level":"info","msg":"Server starting on port 8080","time":"2025-05-26 08:06:17"}

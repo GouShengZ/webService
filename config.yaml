@@ -1,0 +1,41 @@
+server:
+  port: 8080
+  mode: debug # debug, release, test
+  read_timeout: 60s
+  write_timeout: 60s
+
+database:
+  driver: mysql
+  host: 192.168.1.31
+  port: 3306
+  username: root
+  password: 932384
+  database: dataflow
+  charset: utf8mb4
+  parse_time: true
+  loc: Local
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600s
+
+log:
+  level: info # debug, info, warn, error
+  format: json # json, text
+  output: file # console, file, both
+  file_path: ./logs/app.log
+  max_size: 100 # MB
+  max_backups: 30
+  max_age: 7 # days
+  compress: true
+
+jaeger:
+  service_name: data-flow-service
+  agent_host: localhost
+  agent_port: 6831
+  sampler_type: const
+  sampler_param: 1
+
+jwt:
+  secret: 31415926
+  expire_time: 24h
+  issuer: data-flow-service
