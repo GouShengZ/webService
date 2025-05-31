@@ -7,6 +7,7 @@ import (
 
 	"webservice/internal/config"
 	"webservice/internal/middleware"
+	"webservice/internal/minio"
 	"webservice/internal/models"
 	"webservice/internal/service"
 
@@ -16,17 +17,25 @@ import (
 
 // Handler 处理器结构体
 type Handler struct {
-	cfg         *config.Config
-	db          *gorm.DB
-	userService *service.UserService
+	cfg            *config.Config
+	db             *gorm.DB
+	userService    *service.UserService
+	packageService *service.PackageService
+	PackageHandler *PackageHandler
 }
 
 // NewHandler 创建处理器实例
-func NewHandler(cfg *config.Config, db *gorm.DB) *Handler {
+func NewHandler(cfg *config.Config, db *gorm.DB, minioClient *minio.Client) *Handler {
+	userService := service.NewUserService(db)
+	packageService := service.NewPackageService(db, minioClient)
+	packageHandler := NewPackageHandler(packageService)
+
 	return &Handler{
-		cfg:         cfg,
-		db:          db,
-		userService: service.NewUserService(db),
+		cfg:            cfg,
+		db:             db,
+		userService:    userService,
+		packageService: packageService,
+		PackageHandler: packageHandler,
 	}
 }
 

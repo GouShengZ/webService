@@ -13,6 +13,7 @@ type Config struct {
 	Log      LogConfig      `mapstructure:"log"`
 	Jaeger   JaegerConfig   `mapstructure:"jaeger"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	MinIO    MinIOConfig    `mapstructure:"minio"`
 }
 
 // ServerConfig 服务器配置
@@ -65,6 +66,16 @@ type JWTConfig struct {
 	Secret     string        `mapstructure:"secret"`
 	ExpireTime time.Duration `mapstructure:"expire_time"`
 	Issuer     string        `mapstructure:"issuer"`
+}
+
+// MinIOConfig MinIO配置
+type MinIOConfig struct {
+	Endpoint   string `mapstructure:"endpoint"`
+	AccessKey  string `mapstructure:"access_key"`
+	SecretKey  string `mapstructure:"secret_key"`
+	UseSSL     bool   `mapstructure:"use_ssl"`
+	BucketName string `mapstructure:"bucket_name"`
+	Region     string `mapstructure:"region"`
 }
 
 // Load 加载配置文件

@@ -14,6 +14,7 @@ import (
 	"webservice/internal/database"
 	"webservice/internal/logger"
 	"webservice/internal/migration"
+	"webservice/internal/minio"
 	"webservice/internal/router"
 	"webservice/internal/tracer"
 )
@@ -33,7 +34,7 @@ func main() {
 	// 初始化链路追踪
 	closer, err := tracer.Init(cfg.Jaeger)
 	if err != nil {
-		logger.Errorf("Failed to initialize tracer: %v", err)
+		logger.Warnf("Failed to initialize tracer (continuing without tracing): %v", err)
 	} else {
 		defer closer.Close()
 		logger.Info("Tracer initialized successfully")
@@ -52,8 +53,17 @@ func main() {
 	}
 	logger.Info("Database migrations completed successfully")
 
+	// 初始化MinIO客户端
+	minioClient, err := minio.NewClient(cfg.MinIO)
+	if err != nil {
+		logger.Warnf("Failed to initialize MinIO client (continuing without file storage): %v", err)
+		minioClient = nil // 设置为nil，让应用程序知道MinIO不可用
+	} else {
+		logger.Info("MinIO client initialized successfully")
+	}
+
 	// 初始化路由
-	r := router.Setup(cfg, db)
+	r := router.Setup(cfg, db, minioClient)
 
 	// 创建HTTP服务器
 	srv := &http.Server{

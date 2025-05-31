@@ -20,8 +20,8 @@ database:
 
 log:
   level: info # debug, info, warn, error
-  format: json # json, text
-  output: file # console, file, both
+  format: text # json, text
+  output: console # console, file, both
   file_path: ./logs/app.log
   max_size: 100 # MB
   max_backups: 30
@@ -39,3 +39,11 @@ jwt:
   secret: 31415926
   expire_time: 24h
   issuer: data-flow-service
+
+minio:
+  endpoint: localhost:9002
+  access_key: admin
+  secret_key: zxc.0916
+  use_ssl: false
+  bucket_name: codedev
+  region: us-east-1

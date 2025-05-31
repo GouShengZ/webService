@@ -22,14 +22,14 @@ func Init(cfg config.JaegerConfig) (io.Closer, error) {
 			Param: cfg.SamplerParam,
 		},
 		Reporter: &jaegercfg.ReporterConfig{
-			LogSpans:           true,
+			LogSpans:           false, // 禁用日志输出避免干扰
 			LocalAgentHostPort: fmt.Sprintf("%s:%d", cfg.AgentHost, cfg.AgentPort),
 		},
 	}
 
 	// 创建tracer
 	tracer, closer, err := jaegerCfg.NewTracer(
-		jaegercfg.Logger(jaegerlog.StdLogger),
+		jaegercfg.Logger(jaegerlog.NullLogger), // 使用NullLogger避免日志干扰
 		jaegercfg.Metrics(metrics.NullFactory),
 	)
 	if err != nil {

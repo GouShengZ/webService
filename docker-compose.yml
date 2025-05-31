@@ -13,8 +13,15 @@ services:
       - WEBSERVICE_DATABASE_PASSWORD=password
       - WEBSERVICE_DATABASE_DATABASE=webservice
       - WEBSERVICE_JAEGER_AGENT_HOST=jaeger
+      - WEBSERVICE_MINIO_ENDPOINT=minio:9000
+      - WEBSERVICE_MINIO_ACCESS_KEY=minioadmin
+      - WEBSERVICE_MINIO_SECRET_KEY=minioadmin
+      - WEBSERVICE_MINIO_BUCKET=packages
+      - WEBSERVICE_MINIO_USE_SSL=false
     depends_on:
       mysql:
+        condition: service_healthy
+      minio:
         condition: service_healthy
       jaeger:
         condition: service_started
@@ -49,6 +56,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - webservice-network
+    restart: unless-stopped
+
+  # MinIO对象存储
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"  # API端口
+      - "9001:9001"  # Console端口
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
     networks:
       - webservice-network
     restart: unless-stopped
@@ -136,6 +165,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+  minio_data:
     driver: local
   redis_data:
     driver: local

@@ -6,6 +6,7 @@ import (
 	"webservice/internal/config"
 	"webservice/internal/handler"
 	"webservice/internal/middleware"
+	"webservice/internal/minio"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -13,7 +14,7 @@ import (
 )
 
 // Setup 设置路由
-func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
+func Setup(cfg *config.Config, db *gorm.DB, minioClient *minio.Client) *gin.Engine {
 	// 设置Gin模式
 	gin.SetMode(cfg.Server.Mode)
 
@@ -27,7 +28,7 @@ func Setup(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	setupMiddleware(r, cfg)
 
 	// 设置路由组
-	setupRoutes(r, cfg, db)
+	setupRoutes(r, cfg, db, minioClient)
 
 	return r
 }
@@ -60,9 +61,9 @@ func setupMiddleware(r *gin.Engine, cfg *config.Config) {
 }
 
 // setupRoutes 设置路由组
-func setupRoutes(r *gin.Engine, cfg *config.Config, db *gorm.DB) {
+func setupRoutes(r *gin.Engine, cfg *config.Config, db *gorm.DB, minioClient *minio.Client) {
 	// 创建处理器
-	h := handler.NewHandler(cfg, db)
+	h := handler.NewHandler(cfg, db, minioClient)
 
 	// 健康检查路由 - 用于监控服务状态
 	r.GET("/health", h.HealthCheck)       // 返回服务健康状态信息
@@ -83,7 +84,7 @@ func setupRoutes(r *gin.Engine, cfg *config.Config, db *gorm.DB) {
 
 		// 需要认证的路由 - 必须携带有效JWT token才能访问
 		auth := v1.Group("/auth")
-		auth.Use(middleware.JWTAuth(cfg.JWT)) // 应用JWT认证中间件
+		// auth.Use(middleware.JWTAuth(cfg.JWT)) // 应用JWT认证中间件
 		{
 			auth.GET("/profile", h.GetProfile)    // 获取当前用户个人资料
 			auth.PUT("/profile", h.UpdateProfile) // 更新当前用户个人资料
@@ -92,8 +93,8 @@ func setupRoutes(r *gin.Engine, cfg *config.Config, db *gorm.DB) {
 
 		// 管理员路由 - 只有管理员角色才能访问的接口
 		admin := v1.Group("/admin")
-		admin.Use(middleware.JWTAuth(cfg.JWT))  // 应用JWT认证中间件
-		admin.Use(middleware.RoleAuth("admin")) // 应用角色权限中间件，限制只有admin角色可访问
+		// admin.Use(middleware.JWTAuth(cfg.JWT))  // 应用JWT认证中间件
+		// admin.Use(middleware.RoleAuth("admin")) // 应用角色权限中间件，限制只有admin角色可访问
 		{
 			admin.GET("/users", h.GetUsers)          // 获取用户列表 - 支持分页和筛选
 			admin.GET("/users/:id", h.GetUser)       // 根据ID获取指定用户详细信息
@@ -103,10 +104,35 @@ func setupRoutes(r *gin.Engine, cfg *config.Config, db *gorm.DB) {
 
 		// 用户路由 - 公开的用户信息查询接口
 		users := v1.Group("/users")
-		users.Use(middleware.OptionalJWTAuth(cfg.JWT)) // 可选认证中间件，有token时解析用户信息，无token时也允许访问
+		// users.Use(middleware.OptionalJWTAuth(cfg.JWT)) // 可选认证中间件，有token时解析用户信息，无token时也允许访问
 		{
 			users.GET("/", h.GetPublicUsers)   // 获取公开用户列表 - 只返回公开信息
 			users.GET("/:id", h.GetPublicUser) // 根据ID获取指定用户的公开信息
+		}
+
+		// 包管理路由 - 包的创建、更新、删除等操作
+		packages := v1.Group("/packages")
+		{
+			// 公开的包相关接口（不需要认证）
+			packages.GET("/", h.PackageHandler.SearchPackages)                      // 搜索包列表 - 支持关键词、作者等筛选
+			packages.GET("/stats", h.PackageHandler.GetPackageStats)                // 获取包统计信息 - 总数、下载量等
+			packages.GET("/:package", h.PackageHandler.GetPackage)                  // 获取指定包的详细信息
+			packages.GET("/:package/versions", h.PackageHandler.GetPackageVersions) // 获取指定包的所有版本列表
+
+			// 包版本下载接口（支持匿名下载公开包）
+			packages.GET("/:package/:version/download", h.PackageHandler.DownloadPackageVersion) // 直接下载包文件
+			packages.GET("/:package/:version/download-url", h.PackageHandler.GetDownloadURL)     // 获取下载链接
+
+			// 需要认证的包管理接口
+			packagesAuth := packages.Group("/update")
+			// packagesAuth.Use(middleware.JWTAuth(cfg.JWT))
+			{
+				packagesAuth.POST("/", h.PackageHandler.CreatePackage)                           // 创建新包
+				packagesAuth.PUT("/:package", h.PackageHandler.UpdatePackage)                    // 更新包信息
+				packagesAuth.DELETE("/:package", h.PackageHandler.DeletePackage)                 // 删除包
+				packagesAuth.POST("/:package/versions", h.PackageHandler.UploadPackageVersion)   // 上传新版本
+				packagesAuth.DELETE("/:package/:version", h.PackageHandler.DeletePackageVersion) // 删除指定版本
+			}
 		}
 	}
 

@@ -26,7 +26,8 @@ func Init(cfg config.DatabaseConfig) (*gorm.DB, error) {
 
 	// 配置GORM
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger:                                   logger.Default.LogMode(logger.Silent), // 完全禁用SQL日志以提高性能
+		DisableForeignKeyConstraintWhenMigrating: true,                                  // 禁用外键约束检查加快迁移
 	}
 
 	// 连接数据库

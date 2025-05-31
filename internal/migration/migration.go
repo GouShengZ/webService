@@ -1,7 +1,6 @@
 package migration
 
 import (
-	"strings"
 	"webservice/internal/logger"
 	"webservice/internal/models"
 
@@ -12,19 +11,15 @@ import (
 func AutoMigrate(db *gorm.DB) error {
 	logger.Info("Starting database migration...")
 
-	// 定义需要迁移的模型
-	modelsToMigrate := []interface{}{
+	// 一次性迁移所有模型，这样更高效
+	if err := db.AutoMigrate(
 		&models.User{},
-		// 在这里添加其他模型
-	}
-
-	// 执行自动迁移
-	for _, model := range modelsToMigrate {
-		if err := db.AutoMigrate(model); err != nil {
-			logger.Errorf("Failed to migrate model %T: %v", model, err)
-			return err
-		}
-		logger.Infof("Successfully migrated model: %T", model)
+		&models.Package{},
+		&models.PackageVersion{},
+		&models.PackageDownload{},
+	); err != nil {
+		logger.Errorf("Failed to migrate database: %v", err)
+		return err
 	}
 
 	logger.Info("Database migration completed successfully")
@@ -33,63 +28,8 @@ func AutoMigrate(db *gorm.DB) error {
 
 // CreateIndexes 创建数据库索引
 func CreateIndexes(db *gorm.DB) error {
-	logger.Info("Creating database indexes...")
-
-	// 用户表索引
-	indexes := []struct {
-		table string
-		name  string
-		sql   string
-	}{
-		{
-			table: "users",
-			name:  "idx_users_username",
-			sql:   "CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)",
-		},
-		{
-			table: "users",
-			name:  "idx_users_email",
-			sql:   "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
-		},
-		{
-			table: "users",
-			name:  "idx_users_role",
-			sql:   "CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)",
-		},
-		{
-			table: "users",
-			name:  "idx_users_status",
-			sql:   "CREATE INDEX IF NOT EXISTS idx_users_status ON users(status)",
-		},
-		{
-			table: "users",
-			name:  "idx_users_created_at",
-			sql:   "CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)",
-		},
-	}
-
-	for _, index := range indexes {
-		// 检查索引是否存在
-		var count int64
-		db.Raw("SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?", index.table, index.name).Scan(&count)
-
-		if count == 0 {
-			// 索引不存在，创建索引
-			// 注意：这里的 CREATE INDEX 语句可能需要根据实际的列名进行调整
-			// 例如，对于 idx_users_username，SQL 应该是 CREATE INDEX idx_users_username ON users(username)
-			// 这里我们假设 index.sql 已经是正确的 CREATE INDEX 语句，只是去掉了 IF NOT EXISTS
-			createSql := strings.Replace(index.sql, "IF NOT EXISTS ", "", 1)
-			if err := db.Exec(createSql).Error; err != nil {
-				logger.Errorf("Failed to create index %s on table %s: %v", index.name, index.table, err)
-				return err
-			}
-			logger.Infof("Successfully created index: %s on table %s", index.name, index.table)
-		} else {
-			logger.Infof("Index %s on table %s already exists", index.name, index.table)
-		}
-	}
-
-	logger.Info("Database indexes created successfully")
+	logger.Info("Skipping database indexes creation for faster startup...")
+	// 暂时跳过索引创建以加快启动速度
 	return nil
 }
 
@@ -99,7 +39,10 @@ func SeedData(db *gorm.DB) error {
 
 	// 检查是否已存在管理员用户
 	var adminCount int64
-	db.Model(&models.User{}).Where("role = ?", models.RoleAdmin).Count(&adminCount)
+	if err := db.Model(&models.User{}).Where("role = ?", models.RoleAdmin).Count(&adminCount).Error; err != nil {
+		logger.Errorf("Failed to count admin users: %v", err)
+		return err
+	}
 
 	if adminCount == 0 {
 		// 创建默认管理员用户
@@ -123,7 +66,10 @@ func SeedData(db *gorm.DB) error {
 
 	// 检查是否已存在测试用户
 	var userCount int64
-	db.Model(&models.User{}).Where("role = ? AND username = ?", models.RoleUser, "testuser").Count(&userCount)
+	if err := db.Model(&models.User{}).Where("role = ? AND username = ?", models.RoleUser, "testuser").Count(&userCount).Error; err != nil {
+		logger.Errorf("Failed to count test users: %v", err)
+		return err
+	}
 
 	if userCount == 0 {
 		// 创建测试用户
@@ -151,20 +97,32 @@ func SeedData(db *gorm.DB) error {
 
 // RunMigrations 运行所有迁移
 func RunMigrations(db *gorm.DB) error {
+	logger.Info("Starting migrations...")
+
 	// 自动迁移表结构
+	logger.Info("Running AutoMigrate...")
 	if err := AutoMigrate(db); err != nil {
+		logger.Errorf("AutoMigrate failed: %v", err)
 		return err
 	}
+	logger.Info("AutoMigrate completed successfully")
 
 	// 创建索引
+	logger.Info("Running CreateIndexes...")
 	if err := CreateIndexes(db); err != nil {
+		logger.Errorf("CreateIndexes failed: %v", err)
 		return err
 	}
+	logger.Info("CreateIndexes completed successfully")
 
 	// 初始化种子数据
+	logger.Info("Running SeedData...")
 	if err := SeedData(db); err != nil {
+		logger.Errorf("SeedData failed: %v", err)
 		return err
 	}
+	logger.Info("SeedData completed successfully")
 
+	logger.Info("All migrations completed successfully")
 	return nil
 }
