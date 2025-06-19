@@ -1,5 +1,5 @@
 # 使用官方Go镜像作为构建环境
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
@@ -7,17 +7,26 @@ WORKDIR /app
 # 安装必要的包
 RUN apk add --no-cache git ca-certificates tzdata
 
+# 设置环境变量
+ENV GO111MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
+
 # 复制go mod文件
 COPY go.mod go.sum ./
 
+# 设置Go代理（如果在中国，可以提高下载速度）
+ENV GOPROXY=https://goproxy.cn,direct
+
 # 下载依赖
-RUN go mod download
+RUN go mod download && go mod verify
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN go build -ldflags="-w -s" -o main .
 
 # 使用轻量级的alpine镜像作为运行环境
 FROM alpine:latest
