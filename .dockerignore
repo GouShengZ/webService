@@ -1,0 +1,54 @@
+# Git 相关文件
+.git
+.gitignore
+.github
+
+# Go 构建文件
+build/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 测试文件
+*_test.go
+*.test
+*.prof
+
+# IDE 相关文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志文件
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 文档
+README.md
+*.md
+
+# Docker 相关文件
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Makefile
+Makefile
+
+# 配置文件 (根据需要调整)
+# config.yaml
+
+# 依赖管理
+vendor/
+
+# 操作系统相关
+.DS_Store
+Thumbs.db
