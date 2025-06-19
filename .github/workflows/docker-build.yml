@@ -18,6 +18,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
     
     steps:
     # 检出代码
@@ -56,6 +59,7 @@ jobs:
           
     # 构建和推送 Docker 镜像
     - name: Build and push Docker image
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
@@ -96,15 +100,60 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Extract first image tag
+      id: extract-tag
+      run: |
+        # 从 build job 的输出中提取第一个镜像标签
+        TAGS="${{ needs.build.outputs.image-tags }}"
+        if [ -z "$TAGS" ]; then
+          echo "Error: No image tags found from build job"
+          exit 1
+        fi
+        
+        FIRST_TAG=$(echo "$TAGS" | head -n1)
+        if [ -z "$FIRST_TAG" ]; then
+          echo "Error: Failed to extract first tag"
+          exit 1
+        fi
+        
+        echo "image-tag=$FIRST_TAG" >> $GITHUB_OUTPUT
+        echo "✅ Scanning image: $FIRST_TAG"
+        
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: '${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}'
+        image-ref: '${{ steps.extract-tag.outputs.image-tag }}'
         format: 'sarif'
         output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+        exit-code: '0'  # 不因为发现漏洞而失败
+        
+    - name: Check Trivy results file
+      run: |
+        if [ ! -f "trivy-results.sarif" ]; then
+          echo "Error: trivy-results.sarif file not found"
+          ls -la
+          exit 1
+        fi
+        echo "✅ Trivy results file created successfully"
         
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
-      if: always()
+      if: always() && hashFiles('trivy-results.sarif') != ''
       with:
         sarif_file: 'trivy-results.sarif'
+        
+    - name: Security Scan Summary
+      if: always()
+      run: |
+        echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Image Scanned**: ${{ steps.extract-tag.outputs.image-tag }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Scanner**: Trivy" >> $GITHUB_STEP_SUMMARY
+        echo "- **Scan Date**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f "trivy-results.sarif" ]; then
+          echo "✅ **Scan completed successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "📄 **Results uploaded to GitHub Security tab**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Scan failed - results file not found**" >> $GITHUB_STEP_SUMMARY
+        fi
